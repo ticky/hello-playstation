@@ -15,6 +15,11 @@
 GSGLOBAL *gsGlobal;
 GSFONTM *gsFontM;
 
+// BIOS font characters are stored as 26x26px
+// gsKit_fontm_print(gsGlobal, gsFontM, 0.0f, 0.0f, 1, rgbaBlueFont, "XX\nXX");
+// gsKit_fontm_print(gsGlobal, gsFontM, 26.0f, 26.0f, 1, rgbaWhiteFont, "X");
+const float gsFontSize = 26.0f;
+
 static char padBuf[256];
 struct padButtonStatus buttons;
 u32 paddata;
@@ -66,17 +71,22 @@ void waitPadReady(int port) {
 
 void mode_menu() {
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    13.0f, 13.0f, 1,
+                    gsFontSize * 0.5f, gsFontSize * 0.5f, 1,
                     rgbaWhiteFont,
                     "Hello PlayStation");
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    13.0f, 52.0f, 1,
+                    gsFontSize * 0.5f, gsFontSize * 3.0f, 1,
                     menu_index == MODE_TEST ? rgbaBlueFont : rgbaWhiteFont,
                     "Graphics Modes");
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    13.0f, 78.0f, 1,
+                    gsFontSize * 0.5f, gsFontSize * 4.0f, 1,
                     menu_index == FONT_TEST ? rgbaBlueFont : rgbaWhiteFont,
                     "OSD Font Test");
+
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    rgbaWhiteFont,
+                    "\f0062 Enter");
 
   if (new_pad & PAD_UP) {
     if (menu_index == 1) {
@@ -98,7 +108,7 @@ void mode_menu() {
 }
 
 void mode_mode_test() {
-  // \f794 = ⇧
+  // \f0794 = ⇧
   char mode[128];
 
   snprintf((char *)mode, 128,
@@ -123,6 +133,11 @@ void mode_mode_test() {
                     rgbaWhiteFont,
                     mode);
 
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    rgbaWhiteFont,
+                    "\f0097 Return");
+
   // Triangle to exit
   if (new_pad & PAD_TRIANGLE) {
     operation_mode = MENU;
@@ -130,24 +145,34 @@ void mode_mode_test() {
 }
 
 void mode_font_test() {
-  char sample[10];
-
-  // BIOS font characters are stored as 26x26px
-  // gsKit_fontm_print(gsGlobal, gsFontM, 0.0f, 0.0f, 1, rgbaBlueFont, "XX\nXX");
-  // gsKit_fontm_print(gsGlobal, gsFontM, 26.0f, 26.0f, 1, rgbaWhiteFont, "X");
+  char sample[6];
 
   // snprintf((char *)sample, 10,
   //          "W: %d H:%d", (*gsFontM->Texture)->Width, (*gsFontM->Texture)->Height);
 
-  int charactersPerLine = gsGlobal->Width / 13;
+  // Minimum is 0.35f, any lower and it'll crash
+  float charScale = 0.5f;
+  float charSize = charScale * gsFontSize;
 
-  for (int i = 0; i < 800; ++i) {
-    snprintf(sample, 10, "\f%d", i);
+  int charactersPerLine = (gsGlobal->Width / charSize) - 5;
+  int linesPerScreen = (gsGlobal->Height - (gsFontSize * 2)) / charSize;
+
+  for (int i = 0; i < charactersPerLine * linesPerScreen && i < 10000; ++i) {
+    if ((i % charactersPerLine * charSize) == 0) {
+      snprintf(sample, 6, "%04d", i);
+      gsKit_fontm_print_scaled(gsGlobal, gsFontM, 0, (i / charactersPerLine * charSize), 1, charScale, rgbaWhiteTransparentFont, sample);
+    }
+    snprintf(sample, 6, "\f%04d", i);
     gsKit_fontm_print_scaled(gsGlobal, gsFontM,
-                             (i % charactersPerLine * 13.0f), (i / charactersPerLine * 13.0f), 1, 0.5f,
+                             5 * charSize + (i % charactersPerLine * charSize), (i / charactersPerLine * charSize), 1, charScale,
                              rgbaWhiteTransparentFont,
                              sample);
   }
+
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    rgbaWhiteFont,
+                    "\f0097 Return");
 
   // Triangle to exit
   if (new_pad & PAD_TRIANGLE) {
