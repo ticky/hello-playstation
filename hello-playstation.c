@@ -1,5 +1,6 @@
 #include <debug.h>
 #include <sifrpc.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -17,7 +18,7 @@ u64 rgbaWhiteFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x80, 0x00);
 
 int main(int argc, char *argv[]) {
   char mode[128];
-  int frame = 0;
+  uint64_t frame = 0;
 
   // Set up GSKit so we can do fancy graphics
   gsGlobal = gsKit_init_global();
@@ -79,8 +80,21 @@ int main(int argc, char *argv[]) {
   // init_scr();
 
   while (1) {
+    snprintf((char *)mode, 128,
+             "GS Mode #%d\n%s, %s, %s\nDrawField: %d\nFramebuffer: %dx%d\nDisplay: %dx%d\nFrame:  %lld",
+             gsGlobal->Mode,
+             gsGlobal->Aspect == GS_ASPECT_4_3 ? "4:3" : "16:9",
+             gsGlobal->Interlace == GS_INTERLACED ? "Interlaced" : "Non-Interlaced",
+             gsGlobal->Field == GS_FRAME ? "Frame" : "Field",
+             gsGlobal->DrawField,
+             gsGlobal->Width,
+             gsGlobal->Height,
+             gsGlobal->DW,
+             gsGlobal->DH,
+             frame);
+
     // Draw some nice text using the BIOS font
-    gsKit_fontm_print(gsGlobal, gsFontM, 15.0f, 22.0f, 1, rgbaWhiteFont, "Hello, PlayStation 2!");
+    gsKit_fontm_print(gsGlobal, gsFontM, 15.0f, 22.0f, 1, rgbaWhiteFont, mode);
 
     gsKit_prim_line(gsGlobal, 0.0f, 0.0f, 575.0f, 200.0f, 2, rgbaBlack);
 
@@ -92,7 +106,12 @@ int main(int argc, char *argv[]) {
     gsKit_sync_flip(gsGlobal);
     gsKit_TexManager_nextFrame(gsGlobal);
 
-    frame++;
+    // Unlikely, but I'd rather this didn't crash horribly
+    if (frame != UINT64_MAX) {
+      frame++;
+    } else {
+      frame = 0;
+    }
   }
 
   gsKit_free_fontm(gsGlobal, gsFontM);
