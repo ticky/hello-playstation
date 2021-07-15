@@ -2,14 +2,13 @@
 #include <kernel.h>
 #include <loadfile.h>
 #include <sifrpc.h>
-#include <sifrpc.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <gsKit.h>
 #include <dmaKit.h>
+#include <gsKit.h>
 
 #include "libpad.h"
 
@@ -40,28 +39,28 @@ enum operation_mode operation_mode = MENU;
 enum operation_mode menu_index = 1;
 
 void loadModules() {
-    int ret;
+  int ret;
 
-    ret = SifLoadModule("rom0:SIO2MAN", 0, NULL);
-    if (ret < 0) {
-        printf("sifLoadModule sio failed: %d\n", ret);
-        SleepThread();
-    }
+  ret = SifLoadModule("rom0:SIO2MAN", 0, NULL);
+  if (ret < 0) {
+    printf("sifLoadModule sio failed: %d\n", ret);
+    SleepThread();
+  }
 
-    ret = SifLoadModule("rom0:PADMAN", 0, NULL);
-    if (ret < 0) {
-        printf("sifLoadModule pad failed: %d\n", ret);
-        SleepThread();
-    }
+  ret = SifLoadModule("rom0:PADMAN", 0, NULL);
+  if (ret < 0) {
+    printf("sifLoadModule pad failed: %d\n", ret);
+    SleepThread();
+  }
 }
 
 void waitPadReady(int port) {
   /* Wait for request to complete. */
-  while(padGetReqState(port, 0) != PAD_RSTAT_COMPLETE)
+  while (padGetReqState(port, 0) != PAD_RSTAT_COMPLETE)
     gsKit_sync_flip(gsGlobal);
 
   /* Wait for pad to be stable. */
-  while(padGetState(port, 0) != PAD_STATE_STABLE)
+  while (padGetState(port, 0) != PAD_STATE_STABLE)
     gsKit_sync_flip(gsGlobal);
 }
 
@@ -79,7 +78,7 @@ void mode_menu() {
                     menu_index == FONT_TEST ? rgbaBlueFont : rgbaWhiteFont,
                     "OSD Font Test");
 
-  if(new_pad & PAD_UP) {
+  if (new_pad & PAD_UP) {
     if (menu_index == 1) {
       menu_index = MODE_COUNT - 1;
     } else {
@@ -164,7 +163,8 @@ int main(int argc, char *argv[]) {
   // Set up the GSKit ROM font
   gsFontM = gsKit_init_fontm();
 
-  // Set up the DMA Controller's "GIF" channel so the Emotion Engine can talk to the Graphics Synthesiser
+  // Set up the DMA Controller's "GIF" channel so the Emotion Engine can talk to
+  // the Graphics Synthesiser
   dmaKit_init(D_CTRL_RELE_OFF, D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
               D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
   dmaKit_chan_init(DMA_CHANNEL_GIF);
@@ -206,9 +206,9 @@ int main(int argc, char *argv[]) {
   int ret;
 
   // port is 0 or 1, slot is for multitap
-  if((ret = padPortOpen(0, 0, padBuf)) == 0) {
-      printf("padOpenPort failed: %d\n", ret);
-      SleepThread();
+  if ((ret = padPortOpen(0, 0, padBuf)) == 0) {
+    printf("padOpenPort failed: %d\n", ret);
+    SleepThread();
   }
 
   waitPadReady(0);
@@ -255,13 +255,13 @@ int main(int argc, char *argv[]) {
     //   gsKit_queue_reset(GS_PERSISTENT);
     // }
 
-    // Execute the draw buffer commands, and flip the framebuffer on vertical blank
+    // Execute the draw buffer commands, and flip the framebuffer on vblank
     gsKit_queue_exec(gsGlobal);
     gsKit_sync_flip(gsGlobal);
     gsKit_TexManager_nextFrame(gsGlobal);
   }
 
-  // (hypothetically) destroy the ROM font manager and GSKit so we're being kind about memory
+  // destroy the ROM font manager and GSKit so we're being kind about memory
   gsKit_free_fontm(gsGlobal, gsFontM);
   gsKit_deinit_global(gsGlobal);
 
