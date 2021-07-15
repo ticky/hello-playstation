@@ -214,6 +214,8 @@ int main(int argc, char *argv[]) {
   waitPadReady(0);
 
   while (1) {
+    // enum operation_mode original_mode = operation_mode;
+
     ret = padGetState(0, 0);
     if ((ret == PAD_STATE_STABLE) || (ret == PAD_STATE_FINDCTP1)) {
       ret = padRead(0, 0, &buttons);
@@ -248,9 +250,10 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // TODO: If mode changes, reset graphics queue?
-    // Reset the persistent graphics queue
-    // gsKit_queue_reset(GS_PERSISTENT);
+    // if (original_mode != operation_mode) {
+    //   // Reset the persistent graphics queue
+    //   gsKit_queue_reset(GS_PERSISTENT);
+    // }
 
     // Execute the draw buffer commands, and flip the framebuffer on vertical blank
     gsKit_queue_exec(gsGlobal);
