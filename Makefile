@@ -2,7 +2,7 @@ EE_BIN = hello-playstation.elf
 EE_OBJS = hello-playstation.o
 
 # We want the debug library so we can print text to the debug console
-EE_LIBS = -ldebug -lgskit -ldmakit
+EE_LIBS = -lpad -ldebug -lgskit -ldmakit
 
 # Include gsKit
 EE_INCS := -I$(GSKIT)/include $(EE_INCS)
