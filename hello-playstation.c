@@ -172,14 +172,14 @@ void mode_font_test() {
     snprintf(sample, 6, "\f%04d", (i + font_test_offset));
     gsKit_fontm_print_scaled(gsGlobal, gsFontM,
                              5 * charSize + (i % charactersPerLine * charSize), (i / charactersPerLine * charSize), 1, charScale,
-                             rgbaWhiteTransparentFont,
+                             rgbaWhiteFont,
                              sample);
   }
 
   gsKit_fontm_print(gsGlobal, gsFontM,
                     gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
                     rgbaWhiteFont,
-                    "\f0098/\f0100 Change Page\t\f0097 Return");
+                    "\f0798\f0799 Change Page\t\f0097 Return");
 
   if (new_pad & PAD_UP) {
     if (font_test_offset >= charactersPerLine * linesPerScreen) {
