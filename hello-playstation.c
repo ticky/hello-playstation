@@ -12,6 +12,8 @@
 
 #include "libpad.h"
 
+#include "version.h"
+
 // The float coordinates used for the text drawing routines are off by 0.5f,
 // I don't like that, so here I force them to be correct in this program
 #define gsKit_fontm_print_scaled(gsGlobal, gsFontM, X, Y, Z, scale, colour, String) \
@@ -104,9 +106,24 @@ void mode_menu() {
                     "OSD Font Info");
 
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    gsFontSize * 7.0f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
                     rgbaWhiteFont,
                     "\f0062 Enter");
+
+  gsKit_fontm_print_scaled(gsGlobal, gsFontM,
+                           gsFontSize * 0.25f, (gsGlobal->Height - gsFontSize * 1.25f), 1, 0.5f,
+                           rgbaWhiteTransparentFont,
+                           git_version);
+
+  gsFontM->Align = GSKIT_FALIGN_RIGHT;
+
+  gsKit_fontm_print_scaled(gsGlobal, gsFontM,
+                           gsGlobal->Width - gsFontSize * 0.25f, (gsGlobal->Height - gsFontSize * 1.25f), 1, 0.5f,
+                           rgbaWhiteTransparentFont,
+                           build_date);
+
+
+  gsFontM->Align = GSKIT_FALIGN_LEFT;
 
   if (new_pad & PAD_UP) {
     if (menu_index == 1) {
