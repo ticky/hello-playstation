@@ -10,6 +10,7 @@
 
 #include <dmaKit.h>
 #include <gsKit.h>
+#include <osd_config.h>
 
 #include "libpad.h"
 
@@ -37,7 +38,9 @@ u64 rgbaBlueFont = GS_SETREG_RGBAQ(0x20, 0x20, 0x80, 0x80, 0x00);
 u64 rgbaWhiteTransparentFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x60, 0x00);
 u64 rgbaWhiteFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x80, 0x00);
 
+char romver[16];
 static bool is_running = true;
+static bool confirm_is_circle = true;
 
 enum operation_mode {
   MENU = 0,
@@ -102,7 +105,7 @@ void mode_menu() {
   gsKit_fontm_print(gsGlobal, gsFontM,
                     gsFontSize * 8.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
                     rgbaWhiteFont,
-                    "\f0062 Enter");
+                    confirm_is_circle ? "\f0090 Enter" : "\f0062 Enter");
 
   if (new_pad & PAD_UP) {
     if (menu_index == 1) {
@@ -275,6 +278,15 @@ void mode_font_repertoire() {
 }
 
 int main(int argc, char *argv[]) {
+  // Get the ROM name
+  GetRomName(romver);
+
+  // Configure which button we display as the "confirm" button
+  // We accept both, Gran Turismo style, but advertise by the console region
+  if (strlen(romver) > 0 && (romver[4] == 'E' || romver[4] == 'A' || romver[4] == 'H')) {
+    confirm_is_circle = false;
+  }
+
   // Set up GSKit so we can do fancy graphics
   gsGlobal = gsKit_init_global();
   // gsGlobal->Mode = GS_MODE_PAL;
