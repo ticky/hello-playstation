@@ -35,10 +35,13 @@ u32 new_pad;
 
 u64 rgbaBlack = GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x00, 0x00);
 u64 rgbaPurple = GS_SETREG_RGBAQ(0x89, 0x3f, 0xf4, 0x00, 0x00);
+u64 rgbaOSDPurple = GS_SETREG_RGBAQ(0x3f, 0x33, 0x33, 0x80, 0x00);
 
 u64 rgbaBlueFont = GS_SETREG_RGBAQ(0x20, 0x20, 0x80, 0x80, 0x00);
 u64 rgbaWhiteTransparentFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x60, 0x00);
 u64 rgbaWhiteFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x80, 0x00);
+
+static int is_running = 1;
 
 enum operation_mode {
   MENU = 0,
@@ -78,10 +81,15 @@ void waitPadReady(int port) {
 }
 
 void mode_menu() {
+  gsFontM->Align = GSKIT_FALIGN_CENTER;
+
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 0.5f, gsFontSize * 0.5f, 1,
+                    gsGlobal->Width / 2.0f, gsFontSize * 0.5f, 1,
                     rgbaWhiteFont,
                     "Hello PlayStation");
+
+  gsFontM->Align = GSKIT_FALIGN_LEFT;
+
   gsKit_fontm_print(gsGlobal, gsFontM,
                     gsFontSize * 0.5f, gsFontSize * 3.0f, 1,
                     menu_index == MODE_TEST ? rgbaBlueFont : rgbaWhiteFont,
@@ -116,6 +124,10 @@ void mode_menu() {
 
   if (new_pad & PAD_CROSS || new_pad & PAD_CIRCLE) {
     operation_mode = menu_index;
+  }
+
+  if (new_pad & PAD_SELECT) {
+    is_running = 0;
   }
 }
 
@@ -315,7 +327,7 @@ int main(int argc, char *argv[]) {
 
   waitPadReady(0);
 
-  while (1) {
+  while (is_running) {
     // enum operation_mode original_mode = operation_mode;
 
     ret = padGetState(0, 0);
@@ -370,6 +382,8 @@ int main(int argc, char *argv[]) {
   // destroy the ROM font manager and GSKit so we're being kind about memory
   gsKit_free_fontm(gsGlobal, gsFontM);
   gsKit_deinit_global(gsGlobal);
+
+  Exit(0);
 
   return 0;
 }
