@@ -361,11 +361,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // if (original_mode != operation_mode) {
-    //   // Reset the persistent graphics queue
-    //   gsKit_queue_reset(GS_PERSISTENT);
-    // }
-
     // Execute the draw buffer commands, and flip the framebuffer on vblank
     gsKit_queue_exec(gsGlobal);
     gsKit_sync_flip(gsGlobal);
