@@ -120,7 +120,28 @@ void mode_menu() {
 }
 
 void mode_mode_test() {
-  // \f0794 = ⇧
+  // EXTREMELY basic graphics mode switching
+  // Height values are those used in `gsKit_init_global`
+  if (new_pad & PAD_SQUARE) {
+    switch (gsGlobal->Mode) {
+      case GS_MODE_PAL: {
+        gsGlobal->Mode = GS_MODE_NTSC;
+        gsGlobal->Height = 448;
+        gsKit_vram_clear(gsGlobal);
+        gsKit_init_screen(gsGlobal);
+        break;
+      }
+
+      case GS_MODE_NTSC: {
+        gsGlobal->Mode = GS_MODE_PAL;
+        gsGlobal->Height = 512;
+        gsKit_vram_clear(gsGlobal);
+        gsKit_init_screen(gsGlobal);
+        break;
+      }
+    }
+  }
+
   char mode[128];
 
   snprintf((char *)mode, 128,
@@ -139,16 +160,21 @@ void mode_mode_test() {
            gsGlobal->DW,
            gsGlobal->DH);
 
+  // Draw a checkerboard pattern across the the frame buffer
+  for (int i = 0; i < gsGlobal->Width - gsGlobal->Height; i += 2) {
+    gsKit_prim_line(gsGlobal, i + 0.0f, 0.0f, i + gsGlobal->Height * 1.0f, gsGlobal->Height * 1.0f, 2, rgbaBlack);
+  }
+
   // Draw some nice text using the BIOS font
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    15.0f, 22.0f, 1,
+                    15.5f, 22.5f, 2,
                     rgbaWhiteFont,
                     mode);
 
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 1.5f), 2,
                     rgbaWhiteFont,
-                    "\f0097 Return");
+                    "\f0095 Switch Mode  \f0097 Return");
 
   // Triangle to exit
   if (new_pad & PAD_TRIANGLE) {
@@ -263,16 +289,7 @@ int main(int argc, char *argv[]) {
   // Upload the ROM font to the Graphics Synthesiser
   gsKit_fontm_upload(gsGlobal, gsFontM);
 
-  // Set GSKit's draw buffer (list of drawing commands) to "PERSISTENT" mode
-  gsKit_mode_switch(gsGlobal, GS_PERSISTENT);
-
-  // Clear the graphics context with a nice purple
-  gsKit_clear(gsGlobal, rgbaPurple);
-
-  // Draw a single line primitive
-  // gsKit_prim_line(gsGlobal, 525.0f, 125.0f, 575.0f, 200.0f, 2, rgbaBlack);
-
-  // Switch the draw buffer back to "ONESHOT" mode
+  // Set GSKit's draw buffer (list of drawing commands) to "ONESHOT" mode
   gsKit_mode_switch(gsGlobal, GS_ONESHOT);
 
   // Initialise the Remote Procedure Call handler,
@@ -311,6 +328,10 @@ int main(int argc, char *argv[]) {
         old_pad = paddata;
       }
     }
+
+    // For some reason we can't clear the GS_PERSISTENT queue,
+    // so just do this every frame instead
+    gsKit_clear(gsGlobal, rgbaPurple);
 
     switch(operation_mode) {
       case MENU: {
