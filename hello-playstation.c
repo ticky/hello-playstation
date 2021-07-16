@@ -205,11 +205,11 @@ void mode_font_info() {
 
   snprintf((char *)info, 256,
            "OSD Font Info\n"
-           "Dimensions:    %d\f0062%d\n"
+           "Dimensions:    %dx%d\n"
            "Pixel Format:  0x%02x\n"
            "CLUT PxFormat: 0x%02x\n"
            "Filter:        %s\n"
-           "Entries:       %d\n",
+           "Entries:       %d",
            fontTexture->Width,
            fontTexture->Height,
            fontTexture->PSM,
