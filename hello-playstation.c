@@ -40,9 +40,9 @@ static int is_running = 1;
 
 enum operation_mode {
   MENU = 0,
-  MODE_TEST,
-  FONT_TEST,
+  GRAPHICS_MODES,
   FONT_INFO,
+  FONT_REPERTOIRE,
   MODE_COUNT
 };
 
@@ -83,23 +83,23 @@ void mode_menu() {
                     rgbaWhiteFont,
                     "Hello PlayStation");
 
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsGlobal->Width / 2.0f, gsFontSize * 3.0f, 1,
+                    menu_index == GRAPHICS_MODES ? rgbaBlueFont : rgbaWhiteFont,
+                    "Graphics Modes");
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsGlobal->Width / 2.0f, gsFontSize * 4.0f, 1,
+                    menu_index == FONT_INFO ? rgbaBlueFont : rgbaWhiteFont,
+                    "OSD Font Info");
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsGlobal->Width / 2.0f, gsFontSize * 5.0f, 1,
+                    menu_index == FONT_REPERTOIRE ? rgbaBlueFont : rgbaWhiteFont,
+                    "Font Repertoire");
+
   gsFontM->Align = GSKIT_FALIGN_LEFT;
 
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 0.5f, gsFontSize * 3.0f, 1,
-                    menu_index == MODE_TEST ? rgbaBlueFont : rgbaWhiteFont,
-                    "Graphics Modes");
-  gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 0.5f, gsFontSize * 4.0f, 1,
-                    menu_index == FONT_TEST ? rgbaBlueFont : rgbaWhiteFont,
-                    "OSD Font Test");
-  gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 0.5f, gsFontSize * 5.0f, 1,
-                    menu_index == FONT_INFO ? rgbaBlueFont : rgbaWhiteFont,
-                    "OSD Font Info");
-
-  gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    gsFontSize * 8.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
                     rgbaWhiteFont,
                     "\f0062 Enter");
 
@@ -126,7 +126,7 @@ void mode_menu() {
   }
 }
 
-void mode_mode_test() {
+void mode_graphics_modes() {
   // EXTREMELY basic graphics mode switching
   // Height values are those used in `gsKit_init_global`
   if (new_pad & PAD_SQUARE) {
@@ -189,55 +189,6 @@ void mode_mode_test() {
   }
 }
 
-int font_test_offset = 0;
-
-void mode_font_test() {
-  char sample[6];
-
-  // snprintf((char *)sample, 10,
-  //          "W: %d H:%d", (*gsFontM->Texture)->Width, (*gsFontM->Texture)->Height);
-
-  // Minimum is 0.35f, any lower and it'll crash
-  float charScale = 0.5f;
-  float charSize = charScale * gsFontSize;
-
-  int charactersPerLine = (gsGlobal->Width / charSize) - 5;
-  int linesPerScreen = (gsGlobal->Height - (gsFontSize * 2)) / charSize;
-
-  for (int i = 0; i < charactersPerLine * linesPerScreen && (i + font_test_offset) < gsFontM->Header.num_entries && i < 10000; ++i) {
-    if (((i + font_test_offset) % charactersPerLine * charSize) == 0) {
-      snprintf(sample, 6, "%04d", (i + font_test_offset));
-      gsKit_fontm_print_scaled(gsGlobal, gsFontM, 0, (i / charactersPerLine * charSize), 1, charScale, rgbaWhiteTransparentFont, sample);
-    }
-    snprintf(sample, 6, "\f%04d", (i + font_test_offset));
-    gsKit_fontm_print_scaled(gsGlobal, gsFontM,
-                             5 * charSize + (i % charactersPerLine * charSize), (i / charactersPerLine * charSize), 1, charScale,
-                             rgbaWhiteFont,
-                             sample);
-  }
-
-  gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
-                    rgbaWhiteFont,
-                    "\f0798\f0799 Change Page\t\f0097 Return");
-
-  if (new_pad & PAD_UP) {
-    if (font_test_offset >= charactersPerLine * linesPerScreen) {
-      font_test_offset -= charactersPerLine * linesPerScreen;
-    }
-  } else if (new_pad & PAD_DOWN) {
-    if (font_test_offset < gsFontM->Header.num_entries / charactersPerLine * linesPerScreen) {
-      font_test_offset += charactersPerLine * linesPerScreen;
-    }
-  }
-
-  // Triangle to exit
-  if (new_pad & PAD_TRIANGLE) {
-    font_test_offset = 0;
-    operation_mode = MENU;
-  }
-}
-
 void mode_font_info() {
   char info[256];
 
@@ -269,6 +220,55 @@ void mode_font_info() {
 
   // Triangle to exit
   if (new_pad & PAD_TRIANGLE) {
+    operation_mode = MENU;
+  }
+}
+
+int font_repertoire_offset = 0;
+
+void mode_font_repertoire() {
+  char sample[6];
+
+  // snprintf((char *)sample, 10,
+  //          "W: %d H:%d", (*gsFontM->Texture)->Width, (*gsFontM->Texture)->Height);
+
+  // Minimum is 0.35f, any lower and it'll crash
+  float charScale = 0.5f;
+  float charSize = charScale * gsFontSize;
+
+  int charactersPerLine = (gsGlobal->Width / charSize) - 5;
+  int linesPerScreen = (gsGlobal->Height - (gsFontSize * 2)) / charSize;
+
+  for (int i = 0; i < charactersPerLine * linesPerScreen && (i + font_repertoire_offset) < gsFontM->Header.num_entries && i < 10000; ++i) {
+    if (((i + font_repertoire_offset) % charactersPerLine * charSize) == 0) {
+      snprintf(sample, 6, "%04d", (i + font_repertoire_offset));
+      gsKit_fontm_print_scaled(gsGlobal, gsFontM, 0, (i / charactersPerLine * charSize), 1, charScale, rgbaWhiteTransparentFont, sample);
+    }
+    snprintf(sample, 6, "\f%04d", (i + font_repertoire_offset));
+    gsKit_fontm_print_scaled(gsGlobal, gsFontM,
+                             5 * charSize + (i % charactersPerLine * charSize), (i / charactersPerLine * charSize), 1, charScale,
+                             rgbaWhiteFont,
+                             sample);
+  }
+
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    rgbaWhiteFont,
+                    "\f0798\f0799 Change Page\t\f0097 Return");
+
+  if (new_pad & PAD_UP) {
+    if (font_repertoire_offset >= charactersPerLine * linesPerScreen) {
+      font_repertoire_offset -= charactersPerLine * linesPerScreen;
+    }
+  } else if (new_pad & PAD_DOWN) {
+    if (font_repertoire_offset < gsFontM->Header.num_entries / charactersPerLine * linesPerScreen) {
+      font_repertoire_offset += charactersPerLine * linesPerScreen;
+    }
+  }
+
+  // Triangle to exit
+  if (new_pad & PAD_TRIANGLE) {
+    font_repertoire_offset = 0;
     operation_mode = MENU;
   }
 }
@@ -346,18 +346,18 @@ int main(int argc, char *argv[]) {
         break;
       }
 
-      case MODE_TEST: {
-        mode_mode_test();
-        break;
-      }
-
-      case FONT_TEST: {
-        mode_font_test();
+      case GRAPHICS_MODES: {
+        mode_graphics_modes();
         break;
       }
 
       case FONT_INFO: {
         mode_font_info();
+        break;
+      }
+
+      case FONT_REPERTOIRE: {
+        mode_font_repertoire();
         break;
       }
 
