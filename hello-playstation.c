@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <loadfile.h>
 #include <sifrpc.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +37,7 @@ u64 rgbaBlueFont = GS_SETREG_RGBAQ(0x20, 0x20, 0x80, 0x80, 0x00);
 u64 rgbaWhiteTransparentFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x60, 0x00);
 u64 rgbaWhiteFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x80, 0x00);
 
-static int is_running = 1;
+static bool is_running = true;
 
 enum operation_mode {
   MENU = 0,
@@ -122,7 +123,7 @@ void mode_menu() {
   }
 
   if (new_pad & PAD_SELECT) {
-    is_running = 0;
+    is_running = false;
   }
 }
 
