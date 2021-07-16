@@ -37,6 +37,7 @@ enum operation_mode {
   MENU = 0,
   MODE_TEST,
   FONT_TEST,
+  FONT_INFO,
   MODE_COUNT
 };
 
@@ -82,6 +83,10 @@ void mode_menu() {
                     gsFontSize * 0.5f, gsFontSize * 4.0f, 1,
                     menu_index == FONT_TEST ? rgbaBlueFont : rgbaWhiteFont,
                     "OSD Font Test");
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsFontSize * 0.5f, gsFontSize * 5.0f, 1,
+                    menu_index == FONT_INFO ? rgbaBlueFont : rgbaWhiteFont,
+                    "OSD Font Info");
 
   gsKit_fontm_print(gsGlobal, gsFontM,
                     gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
@@ -114,9 +119,9 @@ void mode_mode_test() {
   snprintf((char *)mode, 128,
            "GS Mode #%d\n"
            "%s, %s, %s\n"
-           "DrawField: %d\n"
-           "Framebuffer: %dx%d\n"
-           "Display: %dx%d\n",
+           "DrawField:   %d\n"
+           "Framebuffer: %d\f0062%d\n"
+           "Display:     %d\f0062%d\n",
            gsGlobal->Mode,
            gsGlobal->Aspect == GS_ASPECT_4_3 ? "4:3" : "16:9",
            gsGlobal->Interlace == GS_INTERLACED ? "Interlaced" : "Non-Interlaced",
@@ -144,6 +149,8 @@ void mode_mode_test() {
   }
 }
 
+int font_test_offset = 0;
+
 void mode_font_test() {
   char sample[6];
 
@@ -157,17 +164,63 @@ void mode_font_test() {
   int charactersPerLine = (gsGlobal->Width / charSize) - 5;
   int linesPerScreen = (gsGlobal->Height - (gsFontSize * 2)) / charSize;
 
-  for (int i = 0; i < charactersPerLine * linesPerScreen && i < 10000; ++i) {
-    if ((i % charactersPerLine * charSize) == 0) {
-      snprintf(sample, 6, "%04d", i);
+  for (int i = 0; i < charactersPerLine * linesPerScreen && (i + font_test_offset) < gsFontM->Header.num_entries && i < 10000; ++i) {
+    if (((i + font_test_offset) % charactersPerLine * charSize) == 0) {
+      snprintf(sample, 6, "%04d", (i + font_test_offset));
       gsKit_fontm_print_scaled(gsGlobal, gsFontM, 0, (i / charactersPerLine * charSize), 1, charScale, rgbaWhiteTransparentFont, sample);
     }
-    snprintf(sample, 6, "\f%04d", i);
+    snprintf(sample, 6, "\f%04d", (i + font_test_offset));
     gsKit_fontm_print_scaled(gsGlobal, gsFontM,
                              5 * charSize + (i % charactersPerLine * charSize), (i / charactersPerLine * charSize), 1, charScale,
                              rgbaWhiteTransparentFont,
                              sample);
   }
+
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
+                    rgbaWhiteFont,
+                    "\f0098/\f0100 Change Page\t\f0097 Return");
+
+  if (new_pad & PAD_UP) {
+    if (font_test_offset >= charactersPerLine * linesPerScreen) {
+      font_test_offset -= charactersPerLine * linesPerScreen;
+    }
+  } else if (new_pad & PAD_DOWN) {
+    if (font_test_offset < gsFontM->Header.num_entries / charactersPerLine * linesPerScreen) {
+      font_test_offset += charactersPerLine * linesPerScreen;
+    }
+  }
+
+  // Triangle to exit
+  if (new_pad & PAD_TRIANGLE) {
+    font_test_offset = 0;
+    operation_mode = MENU;
+  }
+}
+
+void mode_font_info() {
+  char info[256];
+
+  GSTEXTURE *fontTexture = *gsFontM->Texture;
+
+  snprintf((char *)info, 256,
+           "OSD Font Info\n"
+           "Dimensions:    %d\f0062%d\n"
+           "Pixel Format:  0x%02x\n"
+           "CLUT PxFormat: 0x%02x\n"
+           "Filter:        %s\n"
+           "Entries:       %d\n",
+           fontTexture->Width,
+           fontTexture->Height,
+           fontTexture->PSM,
+           fontTexture->ClutPSM,
+           fontTexture->Filter == GS_FILTER_LINEAR ? "Linear" : "Nearest",
+           gsFontM->Header.num_entries);
+
+  gsKit_fontm_print(gsGlobal, gsFontM,
+                    15.0f, 22.0f, 1,
+                    rgbaWhiteFont,
+                    info);
 
   gsKit_fontm_print(gsGlobal, gsFontM,
                     gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
@@ -265,6 +318,11 @@ int main(int argc, char *argv[]) {
 
       case FONT_TEST: {
         mode_font_test();
+        break;
+      }
+
+      case FONT_INFO: {
+        mode_font_info();
         break;
       }
 
