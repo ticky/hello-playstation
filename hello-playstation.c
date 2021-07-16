@@ -196,26 +196,34 @@ void mode_graphics_modes() {
 void mode_font_info() {
   char info[256];
 
-  GSTEXTURE *fontTexture = *gsFontM->Texture;
-
   snprintf((char *)info, 256,
            "OSD Font Info\n"
-           "Dimensions:    %dx%d\n"
-           "Pixel Format:  0x%02x\n"
-           "CLUT PxFormat: 0x%02x\n"
-           "Filter:        %s\n"
-           "Entries:       %d",
-           fontTexture->Width,
-           fontTexture->Height,
-           fontTexture->PSM,
-           fontTexture->ClutPSM,
-           fontTexture->Filter == GS_FILTER_LINEAR ? "Linear" : "Nearest",
+           "ROM Version: %s\n"
+           "Entries:     %d\n",
+           strlen(romver) == 0 ? "Invalid" : romver,
            gsFontM->Header.num_entries);
 
   gsKit_fontm_print(gsGlobal, gsFontM,
                     15.0f, 22.0f, 1,
                     rgbaWhiteFont,
                     info);
+
+  for (int i = 0; i < GS_FONTM_PAGE_COUNT; ++i) {
+    GSTEXTURE fontTexture = *gsFontM->Texture[i];
+
+    snprintf((char *)info, 256,
+             "Page %d: %dx%d, Px. Fmts: %#02x, %#02x\n",
+             i,
+             fontTexture.Width,
+             fontTexture.Height,
+             fontTexture.PSM,
+             fontTexture.ClutPSM);
+
+    gsKit_fontm_print_scaled(gsGlobal, gsFontM,
+                             15.0f, 22.0f + gsFontSize * 3 + i * gsFontSize * 0.6f, 1, 0.6f,
+                             rgbaWhiteFont,
+                             info);
+  }
 
   gsKit_fontm_print(gsGlobal, gsFontM,
                     gsFontSize * 7.5f, (gsGlobal->Height - gsFontSize * 1.5f), 1,
