@@ -10,6 +10,12 @@ EE_LDFLAGS := -L$(GSKIT)/lib $(EE_LDFLAGS)
 
 all: $(EE_BIN)
 
+run: $(EE_BIN)
+	ps2client execee host:$(EE_BIN)
+
+reset:
+	ps2client reset
+
 clean:
 	rm -f *.elf *.o *.a
 
