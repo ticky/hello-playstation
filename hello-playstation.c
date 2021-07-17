@@ -16,6 +16,7 @@
 
 #include "gskit-coordinate-hack.h"
 
+// Global variables for gsKit and FontM subsystems
 GSGLOBAL *gsGlobal;
 GSFONTM *gsFontM;
 
@@ -24,12 +25,14 @@ GSFONTM *gsFontM;
 // gsKit_fontm_print(gsGlobal, gsFontM, 26.0f, 26.0f, 1, rgbaWhiteFont, "X");
 const float gsFontSize = 26.0f;
 
+// Variables to keep track of the gamepad input
 static char padBuf[256];
 struct padButtonStatus buttons;
 u32 paddata;
 u32 old_pad = 0;
 u32 new_pad;
 
+// Colour definitions for use in drawing with gsKit
 u64 rgbaBlack = GS_SETREG_RGBAQ(0x00, 0x00, 0x00, 0x00, 0x00);
 u64 rgbaPurple = GS_SETREG_RGBAQ(0x89, 0x3f, 0xf4, 0x00, 0x00);
 u64 rgbaOSDPurple = GS_SETREG_RGBAQ(0x3f, 0x33, 0x33, 0x80, 0x00);
@@ -38,15 +41,25 @@ u64 rgbaBlueFont = GS_SETREG_RGBAQ(0x20, 0x20, 0x80, 0x80, 0x00);
 u64 rgbaWhiteTransparentFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x60, 0x00);
 u64 rgbaWhiteFont = GS_SETREG_RGBAQ(0x80, 0x80, 0x80, 0x80, 0x00);
 
+// Place where we can put the console ROM version
 char romver[16];
+
+// As long as this is `true`, the main loop will run
 static bool is_running = true;
+
+// Whether we treat the circle button as "confirm"; based on the console region
 static bool confirm_is_circle = true;
 
+// Possible operation modes for the main loop; each one hands off control to
+// a different function for drawing and input processing
 enum operation_mode {
   MENU = 0,
   GRAPHICS_MODES,
   FONT_INFO,
   FONT_REPERTOIRE,
+  // MODE_COUNT is not a mode, but exposes the end of the mode list,
+  // so it doesn't have to be manually specified elsewhere.
+  // New modes and their menu items must be put before this entry.
   MODE_COUNT
 };
 
@@ -286,6 +299,10 @@ void mode_font_repertoire() {
 }
 
 int main(int argc, char *argv[]) {
+  // Print to the debug/serial interface;
+  // only really useful on an emulator or via ps2link
+  printf("*** Hello, PlayStation 2 ***\n");
+
   // Get the ROM name
   GetRomName(romver);
 
@@ -295,9 +312,10 @@ int main(int argc, char *argv[]) {
     confirm_is_circle = false;
   }
 
+  printf("Running on PS2 ROM \"%s\"", romver);
+
   // Set up GSKit so we can do fancy graphics
   gsGlobal = gsKit_init_global();
-  // gsGlobal->Mode = GS_MODE_PAL;
 
   // Set up the GSKit ROM font
   gsFontM = gsKit_init_fontm();
@@ -309,6 +327,8 @@ int main(int argc, char *argv[]) {
   dmaKit_chan_init(DMA_CHANNEL_GIF);
   // TODO: Can I work out what the rest of those parameters mean?
 
+  // Enable alpha channels on primitive drawing commands;
+  // this is needed for the ROM font drawing to work properly
   gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
 
   // Initialise the screen
@@ -320,6 +340,8 @@ int main(int argc, char *argv[]) {
   // Set GSKit's draw buffer (list of drawing commands) to "ONESHOT" mode
   gsKit_mode_switch(gsGlobal, GS_ONESHOT);
 
+  printf("gsKit screen and fontm initiated");
+
   // Initialise the Remote Procedure Call handler,
   // so the Emotion Engine CPU can talk to the Input Output Processor
   SifInitRpc(0);
@@ -327,14 +349,14 @@ int main(int argc, char *argv[]) {
   // This initiates the debug screen space so we can print text to it
   // init_scr();
 
-  // Print to the debug/serial interface; only really useful on an emulator
-  printf("Hello, PlayStation 2\n");
-
+  // Load modules we need for gamepad inputs from the console ROM
   loadModules();
+  // And start up the gamepad module
   padInit(0);
 
-  int ret;
+  printf("Modules loaded, getting ready to read the controller...");
 
+  int ret;
   // port is 0 or 1, slot is for multitap
   if ((ret = padPortOpen(0, 0, padBuf)) == 0) {
     printf("padOpenPort failed: %d\n", ret);
@@ -343,9 +365,13 @@ int main(int argc, char *argv[]) {
 
   waitPadReady(0);
 
+  printf("Controller ready");
+
+  // Now that we've initialised everything, we enter our main loop
   while (is_running) {
     // enum operation_mode original_mode = operation_mode;
 
+    // First, we grab the latest information from the gamepad, if it's happy
     ret = padGetState(0, 0);
     if ((ret == PAD_STATE_STABLE) || (ret == PAD_STATE_FINDCTP1)) {
       ret = padRead(0, 0, &buttons);
@@ -395,9 +421,14 @@ int main(int argc, char *argv[]) {
     gsKit_TexManager_nextFrame(gsGlobal);
   }
 
+  printf("Exiting...");
+
   // destroy the ROM font manager and GSKit so we're being kind about memory
   gsKit_free_fontm(gsGlobal, gsFontM);
   gsKit_deinit_global(gsGlobal);
+
+  printf("gsKit and fontm denitialised");
+  printf("Ciao!");
 
   Exit(0);
 
