@@ -26,7 +26,7 @@ GSFONTM *gsFontM;
 const float gsFontSize = 26.0f;
 
 // Variables to keep track of the gamepad input
-static char padBuf[256];
+static char padBuf[256] __attribute__((aligned(64)));
 struct padButtonStatus buttons;
 u32 paddata;
 u32 old_pad = 0;
