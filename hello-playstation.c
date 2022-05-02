@@ -150,16 +150,36 @@ void mode_graphics_modes() {
     switch (gsGlobal->Mode) {
       case GS_MODE_PAL: {
         gsGlobal->Mode = GS_MODE_NTSC;
-        gsGlobal->Height = 448;
-        gsKit_vram_clear(gsGlobal);
+        gsGlobal->Height = gsGlobal->Interlace == GS_INTERLACED ? 448 : 448 / 2;
         gsKit_init_screen(gsGlobal);
         break;
       }
 
       case GS_MODE_NTSC: {
         gsGlobal->Mode = GS_MODE_PAL;
-        gsGlobal->Height = 512;
-        gsKit_vram_clear(gsGlobal);
+        gsGlobal->Height = gsGlobal->Interlace == GS_INTERLACED ? 512 : 512 / 2;
+        gsKit_init_screen(gsGlobal);
+        break;
+      }
+    }
+  }
+
+  if (new_pad & PAD_R1) {
+    switch (gsGlobal->Interlace) {
+      case GS_INTERLACED: {
+        gsGlobal->Interlace = GS_NONINTERLACED;
+        gsGlobal->Field = GS_FRAME;
+        gsGlobal->Width /= 2;
+        gsGlobal->Height /= 2;
+        gsKit_init_screen(gsGlobal);
+        break;
+      }
+
+      case GS_NONINTERLACED: {
+        gsGlobal->Interlace = GS_INTERLACED;
+        gsGlobal->Field = GS_FIELD;
+        gsGlobal->Width *= 2;
+        gsGlobal->Height *= 2;
         gsKit_init_screen(gsGlobal);
         break;
       }
@@ -170,19 +190,14 @@ void mode_graphics_modes() {
 
   snprintf((char *)mode, 128,
            "GS Mode #%d\n"
-           "%s, %s, %s\n"
-           "DrawField:   %d\n"
-           "Framebuffer: %d\f0062%d\n"
-           "Display:     %d\f0062%d\n",
+           "%d\f0062%d, %s\n"
+           "%s, %s\n",
            gsGlobal->Mode,
-           gsGlobal->Aspect == GS_ASPECT_4_3 ? "4:3" : "16:9",
-           gsGlobal->Interlace == GS_INTERLACED ? "Interlaced" : "Non-Interlaced",
-           gsGlobal->Field == GS_FRAME ? "Frame" : "Field",
-           gsGlobal->DrawField,
            gsGlobal->Width,
            gsGlobal->Height,
-           gsGlobal->DW,
-           gsGlobal->DH);
+           gsGlobal->Interlace == GS_INTERLACED ? "I" : "NI",
+           gsGlobal->Field == GS_FRAME ? "Frame" : "Field",
+           gsGlobal->Aspect == GS_ASPECT_4_3 ? "4:3" : "16:9");
 
   // Draw a checkerboard pattern across the the frame buffer
   for (int i = 0; i < gsGlobal->Width - gsGlobal->Height; i += 2) {
@@ -196,8 +211,9 @@ void mode_graphics_modes() {
                     mode);
 
   gsKit_fontm_print(gsGlobal, gsFontM,
-                    gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 1.5f), 2,
+                    gsFontSize * 0.5f, (gsGlobal->Height - gsFontSize * 2.5f), 2,
                     rgbaWhiteFont,
+                    "R1 Interlacing\n"
                     "\f0095 Switch Mode  \f0097 Return");
 
   // Triangle to exit
@@ -298,21 +314,14 @@ void mode_font_repertoire() {
   }
 }
 
-int main(int argc, char *argv[]) {
-  // Print to the debug/serial interface;
-  // only really useful on an emulator or via ps2link
-  printf("*** Hello, PlayStation 2 ***\n");
-
-  // Get the ROM name
-  GetRomName(romver);
-
-  // Configure which button we display as the "confirm" button
-  // We accept both, Gran Turismo style, but advertise by the console region
-  if (strlen(romver) > 0 && (romver[4] == 'E' || romver[4] == 'A' || romver[4] == 'H')) {
-    confirm_is_circle = false;
+void init_gs() {
+  if (gsGlobal) {
+    gsKit_deinit_global(gsGlobal);
   }
 
-  printf("Running on PS2 ROM \"%s\"", romver);
+  if (gsFontM) {
+    gsKit_free_fontm(gsGlobal, gsFontM);
+  }
 
   // Set up GSKit so we can do fancy graphics
   gsGlobal = gsKit_init_global();
@@ -331,9 +340,6 @@ int main(int argc, char *argv[]) {
   // this is needed for the ROM font drawing to work properly
   gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
 
-  // Initialise the screen
-  gsKit_init_screen(gsGlobal);
-
   // Upload the ROM font to the Graphics Synthesiser
   gsKit_fontm_upload(gsGlobal, gsFontM);
 
@@ -341,6 +347,28 @@ int main(int argc, char *argv[]) {
   gsKit_mode_switch(gsGlobal, GS_ONESHOT);
 
   printf("gsKit screen and fontm initiated");
+}
+
+int main(int argc, char *argv[]) {
+  // Print to the debug/serial interface;
+  // only really useful on an emulator or via ps2link
+  printf("*** Hello, PlayStation 2 ***\n");
+
+  // Get the ROM name
+  GetRomName(romver);
+
+  // Configure which button we display as the "confirm" button
+  // We accept both, Gran Turismo style, but advertise by the console region
+  if (strlen(romver) > 0 && (romver[4] == 'E' || romver[4] == 'A' || romver[4] == 'H')) {
+    confirm_is_circle = false;
+  }
+
+  printf("Running on PS2 ROM \"%s\"", romver);
+
+  init_gs();
+
+  // Initialise the screen
+  gsKit_init_screen(gsGlobal);
 
   // Initialise the Remote Procedure Call handler,
   // so the Emotion Engine CPU can talk to the Input Output Processor
